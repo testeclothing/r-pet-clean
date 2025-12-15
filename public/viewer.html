@@ -4,42 +4,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <title>Pet AR Viewer</title>
     
-    <!-- Scripts AR -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         
-        /* UI Overlay - Fica por cima da câmara */
+        /* UI Overlay */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none; /* Deixa os toques passarem */
+            z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; justify-content: space-between; align-items: center;
         }
 
-        /* Guia de Scanner (Mira) - CORRIGIDA */
+        /* Guia de Scanner (Mira) */
         .scanner-frame {
             width: 70vw; height: 70vw; 
             max-width: 400px; max-height: 400px;
             border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 20px;
-            
-            /* Posicionamento */
-            position: absolute; 
-            top: 40%; left: 50%; 
+            position: absolute; top: 40%; left: 50%; 
             transform: translate(-50%, -50%);
-            
-            /* CORREÇÃO DO QUADRADO BRANCO */
             background: transparent !important;
-            
-            /* Efeito de escurecer o resto do ecrã */
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); 
-            
             transition: all 0.3s;
         }
-
-        /* Cantos da mira (Estilo Tech) */
         .scanner-frame::before, .scanner-frame::after {
             content: ''; position: absolute; width: 40px; height: 40px;
             border-color: #6366f1; border-style: solid;
@@ -50,10 +39,10 @@
 
         /* Botão Iniciar */
         #start-btn {
-            pointer-events: auto; /* Reativa o toque no botão */
+            pointer-events: auto;
             margin-bottom: 50px;
             padding: 15px 35px;
-            background: rgba(30, 30, 30, 0.8); /* Fundo escuro para contraste */
+            background: rgba(30, 30, 30, 0.8);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.2);
             color: white;
@@ -68,48 +57,63 @@
         }
         #start-btn:active { transform: scale(0.95); background: #6366f1; }
         
-        /* Header Text */
         .header {
-            margin-top: 30px;
-            color: white;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            z-index: 20;
+            margin-top: 30px; color: white; text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 20;
         }
         .header h3 { margin: 0; font-weight: 400; font-size: 1.2rem; }
-
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
     
-    <!-- Camada de Interface -->
     <div id="ui-layer">
-        <div class="header">
-            <h3>Aponte para a foto</h3>
-        </div>
-        
+        <div class="header"><h3>Aponte para a foto</h3></div>
         <div class="scanner-frame" id="scanner"></div>
-
-        <button id="start-btn">
-            <span>🔊 Ativar Som</span>
-        </button>
+        <button id="start-btn"><span>🔊 Ativar Som</span></button>
     </div>
     
-    <!-- Container AR -->
     <div id="ar-container"></div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
+        const frameStyle = urlParams.get('frame') || 'none';
+
+        // LÓGICA DE CONSTRUÇÃO DA MOLDURA 3D
+        function getFrameHtml(style) {
+            if (style === 'none') return '';
+
+            let color = '#FFFFFF';
+            let material = 'metalness: 0.2; roughness: 0.8';
+            
+            if (style === 'wood') {
+                color = '#5C4033'; // Castanho
+                material = 'roughness: 1.0';
+            } else if (style === 'gold') {
+                color = '#FFD700'; // Ouro
+                material = 'metalness: 1.0; roughness: 0.2';
+            }
+
+            // Cria 4 caixas (bordas) à volta do vídeo
+            return `
+                <a-entity position="0 0 0.02">
+                    <a-box color="${color}" material="${material}" position="0 0.8 0" depth="0.1" height="0.1" width="1.2"></a-box>
+                    <a-box color="${color}" material="${material}" position="0 -0.8 0" depth="0.1" height="0.1" width="1.2"></a-box>
+                    <a-box color="${color}" material="${material}" position="-0.55 0 0" depth="0.1" height="1.7" width="0.1"></a-box>
+                    <a-box color="${color}" material="${material}" position="0.55 0 0" depth="0.1" height="1.7" width="0.1"></a-box>
+                </a-entity>
+            `;
+        }
 
         if (!id) {
-            document.body.innerHTML = "<h3 style='color:white; text-align:center; margin-top:50px'>Erro: ID não encontrado no Link</h3>";
+            document.body.innerHTML = "<h3 style='color:white; text-align:center; margin-top:50px'>Erro: ID em falta</h3>";
         } else {
             const mindFileUrl = `/uploads/${id}/targets.mind`;
             const videoUrl = `/uploads/${id}/video.mp4`;
+            
+            const frameEntities = getFrameHtml(frameStyle);
 
-            // HTML da Cena AR (Injetado via JS para garantir carregamento correto)
             const sceneHTML = `
             <a-scene 
                 mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.01; filterBeta: 10; uiLoading: no; uiScanning: no;" 
@@ -125,7 +129,8 @@
                 <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
                 <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-                    <a-video src="#vid" position="0 0 0.05" height="1.5" width="1" rotation="0 0 0"></a-video>
+                    <a-video src="#vid" position="0 0 0" height="1.5" width="1"></a-video>
+                    ${frameEntities}
                 </a-entity>
             </a-scene>
             `;
@@ -138,42 +143,26 @@
             const scannerFrame = document.getElementById('scanner');
             const headerText = document.querySelector('.header h3');
 
-            // Lógica de Som/Início
             startBtn.addEventListener('click', () => {
-                if(video) {
-                    video.play();
-                    video.pause(); // Hack para iOS carregar o buffer de áudio
-                }
+                if(video) { video.play(); video.pause(); }
                 startBtn.classList.add('hidden');
-                
-                // Feedback visual que está pronto
-                scannerFrame.style.borderColor = "#6366f1"; // Roxo
+                scannerFrame.style.borderColor = "#6366f1";
                 headerText.innerText = "À procura da imagem...";
             });
 
-            // Quando encontra a imagem
             target.addEventListener("targetFound", () => {
                 console.log("Foto encontrada!");
                 if(video) video.play();
-                
-                // UI de Sucesso
-                scannerFrame.style.borderColor = "#4ade80"; // Verde
-                scannerFrame.style.boxShadow = "0 0 20px #4ade80"; // Brilho
-                scannerFrame.style.background = "transparent"; // Garante transparência
+                scannerFrame.style.borderColor = "#4ade80";
+                scannerFrame.style.boxShadow = "0 0 20px #4ade80";
+                scannerFrame.style.background = "transparent";
                 headerText.innerText = "Reproduzindo Memória ❤️";
-                
-                // Esconde a mira suavemente após 1 segundo para ver melhor o vídeo
-                setTimeout(() => { 
-                    scannerFrame.style.opacity = '0'; 
-                }, 1000); 
+                setTimeout(() => { scannerFrame.style.opacity = '0'; }, 1000); 
             });
 
-            // Quando perde a imagem
             target.addEventListener("targetLost", () => {
                 console.log("Foto perdida...");
                 if(video) video.pause();
-                
-                // Reset UI
                 scannerFrame.style.borderColor = "rgba(255, 255, 255, 0.5)";
                 scannerFrame.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.6)";
                 scannerFrame.style.opacity = '1';
