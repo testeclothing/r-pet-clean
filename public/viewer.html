@@ -2,33 +2,89 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pet AR Viewer</title>
+    <!-- Bibliotecas AR (A-Frame e MindAR) -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        #btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: blue; color: white; border-radius: 30px; z-index: 999; }
+        /* Estilo do botão Iniciar */
+        #start-btn {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; background: #2563eb; color: white;
+            border: none; border-radius: 25px; font-size: 18px; font-weight: bold;
+            z-index: 999; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            font-family: sans-serif;
+        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div id="btn">🔊 Tocar para Iniciar</div>
+    <!-- Botão para ativar som (Obrigatório para iPhones) -->
+    <div id="start-btn">🔊 Tocar para Iniciar</div>
+
+    <!-- Cena AR -->
     <a-scene mindar-image="" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets><video id="vid" loop="true" crossorigin="anonymous"></video></a-assets>
+        
+        <a-assets>
+            <!-- Configuração do Player de Vídeo -->
+            <video id="vid" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+        </a-assets>
+
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-        <a-entity id="target" mindar-image-target="targetIndex: 0">
-            <a-video src="#vid" position="0 0 0" height="1" width="1"></a-video>
+
+        <!-- O Alvo (A Foto) -->
+        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+            <!-- 
+               AJUSTE DE TAMANHO (OPÇÃO 1 - HARRY POTTER):
+               width="1"   -> Largura igual à da foto física.
+               height="1.5" -> Altura 1.5x maior (para fotos verticais).
+               position="0 0 0.05" -> Ligeiramente à frente para não piscar.
+            -->
+            <a-video src="#vid" position="0 0 0.05" height="1.5" width="1" rotation="0 0 0"></a-video>
         </a-entity>
     </a-scene>
+
     <script>
-        const id = new URLSearchParams(window.location.search).get('id');
-        if(id) {
+        // 1. Ler o ID da Sessão na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        if (!id) {
+            alert("Erro: Link inválido (falta o ID).");
+        } else {
+            // 2. Definir caminhos dos ficheiros
+            const mindFileUrl = `/uploads/${id}/targets.mind`;
+            const videoUrl = `/uploads/${id}/video.mp4`;
+
+            // 3. Ligar tudo à Cena
             const scene = document.querySelector('a-scene');
-            scene.setAttribute('mindar-image', `imageTargetSrc: /uploads/${id}/targets.mind; filterMinCF:0.0001; filterBeta: 0.001;`);
-            const vid = document.getElementById('vid');
-            vid.src = `/uploads/${id}/video.mp4`;
+            const video = document.querySelector('#vid');
             
-            document.getElementById('btn').onclick = () => { vid.play(); vid.pause(); document.getElementById('btn').style.display='none'; };
-            const target = document.getElementById('target');
-            target.addEventListener("targetFound", () => vid.play());
-            target.addEventListener("targetLost", () => vid.pause());
+            scene.setAttribute('mindar-image', `imageTargetSrc: ${mindFileUrl}; filterMinCF:0.0001; filterBeta: 0.001;`);
+            video.src = videoUrl;
+
+            // 4. Lógica do Botão Iniciar
+            const startBtn = document.getElementById('start-btn');
+            startBtn.addEventListener('click', () => {
+                video.play();
+                video.pause(); // Pausa imediata para carregar
+                startBtn.classList.add('hidden');
+            });
+
+            // 5. Quando a câmara encontra a foto
+            const target = document.querySelector('#target-entity');
+            
+            target.addEventListener("targetFound", event => {
+                console.log("Foto encontrada!");
+                video.play();
+            });
+
+            // 6. Quando a câmara perde a foto
+            target.addEventListener("targetLost", event => {
+                console.log("Foto perdida...");
+                video.pause();
+                // video.currentTime = 0; // Descomenta isto se quiseres que o vídeo reinicie sempre
+            });
         }
     </script>
 </body>
