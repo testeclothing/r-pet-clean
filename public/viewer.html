@@ -1,89 +1,166 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <title>Pet AR Viewer</title>
-    <!-- Bibliotecas AR (A-Frame e MindAR) -->
+    
+    <!-- Scripts AR -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
-        /* Estilo do botão Iniciar */
-        #start-btn {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            padding: 15px 30px; background: #2563eb; color: white;
-            border: none; border-radius: 25px; font-size: 18px; font-weight: bold;
-            z-index: 999; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            font-family: sans-serif;
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
         }
+
+        /* Guia de Scanner (Mira) */
+        .scanner-frame {
+            width: 70vw; height: 70vw; max-width: 400px; max-height: 400px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Efeito de foco */
+        }
+        .scanner-frame::before, .scanner-frame::after {
+            content: ''; position: absolute; width: 40px; height: 40px;
+            border-color: #6366f1; border-style: solid;
+            transition: all 0.3s;
+        }
+        .scanner-frame::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 18px 0 0 0; }
+        .scanner-frame::after { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 18px 0; }
+
+        /* Botão Iniciar */
+        #start-btn {
+            pointer-events: auto;
+            margin-bottom: 50px;
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            border-radius: 30px;
+            font-size: 16px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            transition: transform 0.2s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        #start-btn:active { transform: scale(0.95); }
+        
+        /* Header */
+        .header {
+            margin-top: 20px;
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
         .hidden { display: none !important; }
+        
+        /* Loading Animation */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #6366f1;
+            width: 20px; height: 20px;
+            animation: spin 1s linear infinite;
+            display: none; /* Só aparece se necessário */
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <!-- Botão para ativar som (Obrigatório para iPhones) -->
-    <div id="start-btn">🔊 Tocar para Iniciar</div>
-
-    <!-- Cena AR -->
-    <a-scene mindar-image="" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    
+    <!-- Camada de Interface -->
+    <div id="ui-layer">
+        <div class="header">
+            <h3>Aponte para a foto</h3>
+        </div>
         
-        <a-assets>
-            <!-- Configuração do Player de Vídeo -->
-            <video id="vid" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
-        </a-assets>
+        <div class="scanner-frame" id="scanner"></div>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-        <!-- O Alvo (A Foto) -->
-        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-            <!-- 
-               AJUSTE DE TAMANHO (OPÇÃO 1 - HARRY POTTER):
-               width="1"   -> Largura igual à da foto física.
-               height="1.5" -> Altura 1.5x maior (para fotos verticais).
-               position="0 0 0.05" -> Ligeiramente à frente para não piscar.
-            -->
-            <a-video src="#vid" position="0 0 0.05" height="1.5" width="1" rotation="0 0 0"></a-video>
-        </a-entity>
-    </a-scene>
+        <button id="start-btn">
+            <span>🔊 Ativar Som</span>
+        </button>
+    </div>
+    
+    <!-- Container AR -->
+    <div id="ar-container"></div>
 
     <script>
-        // 1. Ler o ID da Sessão na URL
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
 
         if (!id) {
-            alert("Erro: Link inválido (falta o ID).");
+            document.body.innerHTML = "<h3 style='color:white; text-align:center; margin-top:50px'>Erro: ID não encontrado</h3>";
         } else {
-            // 2. Definir caminhos dos ficheiros
             const mindFileUrl = `/uploads/${id}/targets.mind`;
             const videoUrl = `/uploads/${id}/video.mp4`;
 
-            // 3. Ligar tudo à Cena
-            const scene = document.querySelector('a-scene');
-            const video = document.querySelector('#vid');
-            
-            scene.setAttribute('mindar-image', `imageTargetSrc: ${mindFileUrl}; filterMinCF:0.01; filterBeta: 10;`);
-            video.src = videoUrl;
+            // HTML da Cena AR (Oculta nativamente o botão VR e UI de vídeo)
+            const sceneHTML = `
+            <a-scene 
+                mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.01; filterBeta: 10; uiLoading: no; uiScanning: no;" 
+                color-space="sRGB" 
+                renderer="colorManagement: true, physicallyCorrectLights" 
+                vr-mode-ui="enabled: false" 
+                device-orientation-permission-ui="enabled: false">
+                
+                <a-assets>
+                    <video id="vid" src="${videoUrl}" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+                </a-assets>
 
-            // 4. Lógica do Botão Iniciar
+                <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+                <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+                    <a-video src="#vid" position="0 0 0.05" height="1.5" width="1" rotation="0 0 0"></a-video>
+                </a-entity>
+            </a-scene>
+            `;
+
+            document.getElementById('ar-container').innerHTML = sceneHTML;
+
+            const video = document.getElementById('vid');
             const startBtn = document.getElementById('start-btn');
+            const target = document.getElementById('target-entity');
+            const scannerFrame = document.getElementById('scanner');
+
+            // Lógica de Som/Início
             startBtn.addEventListener('click', () => {
                 video.play();
-                video.pause(); // Pausa imediata para carregar
+                video.pause(); // Hack para iOS carregar o buffer
                 startBtn.classList.add('hidden');
+                
+                // Feedback visual que está pronto
+                scannerFrame.style.borderColor = "#6366f1";
+                document.querySelector('.header h3').innerText = "À procura da imagem...";
             });
 
-            // 5. Quando a câmara encontra a foto
-            const target = document.querySelector('#target-entity');
-            
-            target.addEventListener("targetFound", event => {
+            // Quando encontra a imagem
+            target.addEventListener("targetFound", () => {
                 console.log("Foto encontrada!");
                 video.play();
+                scannerFrame.style.borderColor = "#4ade80"; // Verde
+                scannerFrame.style.boxShadow = "0 0 20px #4ade80"; // Brilho
+                document.querySelector('.header h3').innerText = "Reproduzindo Memória ❤️";
+                setTimeout(() => { scannerFrame.style.opacity = '0.2'; }, 1000); // Esconde a mira suavemente
             });
 
-            // 6. Quando a câmara perde a foto
-            target.addEventListener("targetLost", event => {
+            // Quando perde a imagem
+            target.addEventListener("targetLost", () => {
                 console.log("Foto perdida...");
                 video.pause();
-                // video.currentTime = 0; // Descomenta isto se quiseres que o vídeo reinicie sempre
+                scannerFrame.style.borderColor = "rgba(255, 255, 255, 0.5)";
+                scannerFrame.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.5)";
+                scannerFrame.style.opacity = '1';
+                document.querySelector('.header h3').innerText = "Aponte para a foto";
             });
         }
     </script>
