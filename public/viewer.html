@@ -8,7 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        /* CORREÇÃO PRINCIPAL: Fundo preto para evitar barras brancas */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: black; 
+        }
         
         /* UI Overlay */
         #ui-layer {
@@ -25,10 +31,14 @@
             border-radius: 20px;
             position: absolute; top: 40%; left: 50%; 
             transform: translate(-50%, -50%);
+            
+            /* Garante que o interior é transparente e o exterior escuro */
             background: transparent !important;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); 
+            
             transition: all 0.3s;
         }
+        
         .scanner-frame::before, .scanner-frame::after {
             content: ''; position: absolute; width: 40px; height: 40px;
             border-color: #6366f1; border-style: solid;
@@ -88,14 +98,13 @@
             let material = 'metalness: 0.2; roughness: 0.8';
             
             if (style === 'wood') {
-                color = '#5C4033'; // Castanho
+                color = '#5C4033'; 
                 material = 'roughness: 1.0';
             } else if (style === 'gold') {
-                color = '#FFD700'; // Ouro
+                color = '#FFD700';
                 material = 'metalness: 1.0; roughness: 0.2';
             }
 
-            // Cria 4 caixas (bordas) à volta do vídeo
             return `
                 <a-entity position="0 0 0.02">
                     <a-box color="${color}" material="${material}" position="0 0.8 0" depth="0.1" height="0.1" width="1.2"></a-box>
@@ -151,7 +160,6 @@
             });
 
             target.addEventListener("targetFound", () => {
-                console.log("Foto encontrada!");
                 if(video) video.play();
                 scannerFrame.style.borderColor = "#4ade80";
                 scannerFrame.style.boxShadow = "0 0 20px #4ade80";
@@ -161,7 +169,6 @@
             });
 
             target.addEventListener("targetLost", () => {
-                console.log("Foto perdida...");
                 if(video) video.pause();
                 scannerFrame.style.borderColor = "rgba(255, 255, 255, 0.5)";
                 scannerFrame.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.6)";
