@@ -11,22 +11,35 @@
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         
-        /* UI Overlay */
+        /* UI Overlay - Fica por cima da câmara */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
+            z-index: 10; pointer-events: none; /* Deixa os toques passarem */
             display: flex; flex-direction: column; justify-content: space-between; align-items: center;
         }
 
-        /* Guia de Scanner (Mira) */
+        /* Guia de Scanner (Mira) - CORRIGIDA */
         .scanner-frame {
-            width: 70vw; height: 70vw; max-width: 400px; max-height: 400px;
+            width: 70vw; height: 70vw; 
+            max-width: 400px; max-height: 400px;
             border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 20px;
-            position: absolute; top: 50%; left: 50%;
+            
+            /* Posicionamento */
+            position: absolute; 
+            top: 40%; left: 50%; 
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Efeito de foco */
+            
+            /* CORREÇÃO DO QUADRADO BRANCO */
+            background: transparent !important;
+            
+            /* Efeito de escurecer o resto do ecrã */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); 
+            
+            transition: all 0.3s;
         }
+
+        /* Cantos da mira (Estilo Tech) */
         .scanner-frame::before, .scanner-frame::after {
             content: ''; position: absolute; width: 40px; height: 40px;
             border-color: #6366f1; border-style: solid;
@@ -37,43 +50,35 @@
 
         /* Botão Iniciar */
         #start-btn {
-            pointer-events: auto;
+            pointer-events: auto; /* Reativa o toque no botão */
             margin-bottom: 50px;
-            padding: 12px 30px;
-            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 35px;
+            background: rgba(30, 30, 30, 0.8); /* Fundo escuro para contraste */
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
             color: white;
             border-radius: 30px;
             font-size: 16px; font-weight: 600;
             text-transform: uppercase; letter-spacing: 1px;
             cursor: pointer;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             transition: transform 0.2s;
             display: flex; align-items: center; gap: 10px;
+            z-index: 20;
         }
-        #start-btn:active { transform: scale(0.95); }
+        #start-btn:active { transform: scale(0.95); background: #6366f1; }
         
-        /* Header */
+        /* Header Text */
         .header {
-            margin-top: 20px;
-            color: rgba(255,255,255,0.9);
+            margin-top: 30px;
+            color: white;
             text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 20;
         }
+        .header h3 { margin: 0; font-weight: 400; font-size: 1.2rem; }
 
         .hidden { display: none !important; }
-        
-        /* Loading Animation */
-        .loader {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 3px solid #6366f1;
-            width: 20px; height: 20px;
-            animation: spin 1s linear infinite;
-            display: none; /* Só aparece se necessário */
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -99,12 +104,12 @@
         const id = urlParams.get('id');
 
         if (!id) {
-            document.body.innerHTML = "<h3 style='color:white; text-align:center; margin-top:50px'>Erro: ID não encontrado</h3>";
+            document.body.innerHTML = "<h3 style='color:white; text-align:center; margin-top:50px'>Erro: ID não encontrado no Link</h3>";
         } else {
             const mindFileUrl = `/uploads/${id}/targets.mind`;
             const videoUrl = `/uploads/${id}/video.mp4`;
 
-            // HTML da Cena AR (Oculta nativamente o botão VR e UI de vídeo)
+            // HTML da Cena AR (Injetado via JS para garantir carregamento correto)
             const sceneHTML = `
             <a-scene 
                 mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.01; filterBeta: 10; uiLoading: no; uiScanning: no;" 
@@ -131,36 +136,48 @@
             const startBtn = document.getElementById('start-btn');
             const target = document.getElementById('target-entity');
             const scannerFrame = document.getElementById('scanner');
+            const headerText = document.querySelector('.header h3');
 
             // Lógica de Som/Início
             startBtn.addEventListener('click', () => {
-                video.play();
-                video.pause(); // Hack para iOS carregar o buffer
+                if(video) {
+                    video.play();
+                    video.pause(); // Hack para iOS carregar o buffer de áudio
+                }
                 startBtn.classList.add('hidden');
                 
                 // Feedback visual que está pronto
-                scannerFrame.style.borderColor = "#6366f1";
-                document.querySelector('.header h3').innerText = "À procura da imagem...";
+                scannerFrame.style.borderColor = "#6366f1"; // Roxo
+                headerText.innerText = "À procura da imagem...";
             });
 
             // Quando encontra a imagem
             target.addEventListener("targetFound", () => {
                 console.log("Foto encontrada!");
-                video.play();
+                if(video) video.play();
+                
+                // UI de Sucesso
                 scannerFrame.style.borderColor = "#4ade80"; // Verde
                 scannerFrame.style.boxShadow = "0 0 20px #4ade80"; // Brilho
-                document.querySelector('.header h3').innerText = "Reproduzindo Memória ❤️";
-                setTimeout(() => { scannerFrame.style.opacity = '0.2'; }, 1000); // Esconde a mira suavemente
+                scannerFrame.style.background = "transparent"; // Garante transparência
+                headerText.innerText = "Reproduzindo Memória ❤️";
+                
+                // Esconde a mira suavemente após 1 segundo para ver melhor o vídeo
+                setTimeout(() => { 
+                    scannerFrame.style.opacity = '0'; 
+                }, 1000); 
             });
 
             // Quando perde a imagem
             target.addEventListener("targetLost", () => {
                 console.log("Foto perdida...");
-                video.pause();
+                if(video) video.pause();
+                
+                // Reset UI
                 scannerFrame.style.borderColor = "rgba(255, 255, 255, 0.5)";
-                scannerFrame.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.5)";
+                scannerFrame.style.boxShadow = "0 0 0 9999px rgba(0, 0, 0, 0.6)";
                 scannerFrame.style.opacity = '1';
-                document.querySelector('.header h3').innerText = "Aponte para a foto";
+                headerText.innerText = "Aponte para a foto";
             });
         }
     </script>
