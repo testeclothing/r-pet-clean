@@ -16,18 +16,18 @@ app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use(express.json());
 
-// 1. Configurar onde guardar os ficheiros
+// 1. Configurar Storage com ID seguro
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Garante que a pasta uploads/ID existe
-        const uploadPath = path.join(__dirname, 'uploads', req.body.sessionId);
+        // AQUI ESTAVA O ERRO: Agora usamos req.customId em vez de req.body
+        const uploadPath = path.join(__dirname, 'uploads', req.customId);
+        
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        // Renomeia os ficheiros para o padrão esperado
         if (file.fieldname === 'mindFile') {
             cb(null, 'targets.mind');
         } else if (file.fieldname === 'videoFile') {
@@ -38,37 +38,34 @@ const storage = multer.diskStorage({
     }
 });
 
-// 2. CORREÇÃO: Inicializar o Multer corretamente aqui
 const upload = multer({ storage: storage });
 
 app.post('/create-experience', (req, res) => {
-    // Gerar ID da sessão
+    // 2. Gerar ID e guardar num local seguro
     const sessionId = uuidv4();
-    req.body.sessionId = sessionId;
+    req.customId = sessionId; // Guardamos aqui para o Multer ler
 
-    // 3. Definir quais campos aceitamos
     const uploadMiddleware = upload.fields([
         { name: 'mindFile', maxCount: 1 }, 
         { name: 'videoFile', maxCount: 1 }
     ]);
 
-    // Executar o upload
     uploadMiddleware(req, res, async (err) => {
         if (err) {
-            console.error("Erro no upload:", err);
+            console.error("Erro Upload:", err);
             return res.status(500).json({ error: err.message });
         }
 
         try {
-            // Verificar se os ficheiros vieram
+            // Validar se ficheiros existem
             if (!req.files || !req.files['mindFile'] || !req.files['videoFile']) {
-                throw new Error('Faltam ficheiros! Certifica-te que enviaste o .mind e o .mp4');
+                throw new Error('Faltam ficheiros (mind ou video)');
             }
 
             const deployUrl = `${req.protocol}://${req.get('host')}`;
+            // Usamos o mesmo ID para gerar o link
             const viewerUrl = `${deployUrl}/viewer.html?id=${sessionId}`;
             
-            // Gerar QR Code
             const qrCodeData = await QRCode.toDataURL(viewerUrl);
 
             res.json({
@@ -78,7 +75,7 @@ app.post('/create-experience', (req, res) => {
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("Erro Logica:", error);
             res.status(500).json({ error: error.message });
         }
     });
