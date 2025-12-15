@@ -16,12 +16,11 @@ app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use(express.json());
 
-// 1. Configurar Storage com ID seguro
+// Configuração do Multer (Upload)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // AQUI ESTAVA O ERRO: Agora usamos req.customId em vez de req.body
+        // req.customId é definido na rota antes do upload
         const uploadPath = path.join(__dirname, 'uploads', req.customId);
-        
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -41,9 +40,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.post('/create-experience', (req, res) => {
-    // 2. Gerar ID e guardar num local seguro
+    // 1. Gerar ID Único
     const sessionId = uuidv4();
-    req.customId = sessionId; // Guardamos aqui para o Multer ler
+    req.customId = sessionId; 
 
     const uploadMiddleware = upload.fields([
         { name: 'mindFile', maxCount: 1 }, 
@@ -57,14 +56,17 @@ app.post('/create-experience', (req, res) => {
         }
 
         try {
-            // Validar se ficheiros existem
+            // Validar Ficheiros
             if (!req.files || !req.files['mindFile'] || !req.files['videoFile']) {
                 throw new Error('Faltam ficheiros (mind ou video)');
             }
 
+            // Ler o estilo da moldura (padrão 'none')
+            const frameStyle = req.body.frameStyle || 'none';
+
             const deployUrl = `${req.protocol}://${req.get('host')}`;
-            // Usamos o mesmo ID para gerar o link
-            const viewerUrl = `${deployUrl}/viewer.html?id=${sessionId}`;
+            // Adicionar o parâmetro ?frame=estilo ao link
+            const viewerUrl = `${deployUrl}/viewer.html?id=${sessionId}&frame=${frameStyle}`;
             
             const qrCodeData = await QRCode.toDataURL(viewerUrl);
 
