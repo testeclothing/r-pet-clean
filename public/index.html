@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel AR</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; text-align: center; }
+        .step { background: #f4f4f4; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 5px solid #007bff; text-align: left; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        input { margin-top: 10px; width: 100%; }
+        img { max-width: 200px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🐶 Criador de AR</h1>
+    
+    <div class="step">
+        <h3>Passo 1: Gerar o ficheiro .mind</h3>
+        <p>Usa esta ferramenta para converter a tua foto:</p>
+        <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank"><button>Abrir Compilador</button></a>
+    </div>
+
+    <div class="step">
+        <h3>Passo 2: Criar Experiência</h3>
+        <form id="uploadForm">
+            <label>Ficheiro .mind (do passo 1):</label>
+            <input type="file" name="mindFile" accept=".mind" required>
+            <br><br>
+            <label>Vídeo .mp4:</label>
+            <input type="file" name="videoFile" accept="video/mp4" required>
+            <br><br>
+            <button type="submit">Gerar QR Code</button>
+        </form>
+        <p id="status" style="display:none">A carregar...</p>
+    </div>
+
+    <div id="result" style="display:none">
+        <h3>🎉 Pronto!</h3>
+        <img id="qr" src="">
+        <p><a id="link" href="#" target="_blank">Link Direto</a></p>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            document.getElementById('status').style.display = 'block';
+            const formData = new FormData(e.target);
+            const req = await fetch('/create-experience', { method: 'POST', body: formData });
+            const res = await req.json();
+            
+            document.getElementById('status').style.display = 'none';
+            if(res.success) {
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('qr').src = res.qrCode;
+                document.getElementById('link').href = res.viewerUrl;
+            } else { alert('Erro!'); }
+        };
+    </script>
+</body>
+</html>
