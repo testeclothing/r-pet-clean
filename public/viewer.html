@@ -60,7 +60,7 @@
             const scene = document.querySelector('a-scene');
             const video = document.querySelector('#vid');
             
-            scene.setAttribute('mindar-image', `imageTargetSrc: ${mindFileUrl}; filterMinCF:0.0001; filterBeta: 0.001;`);
+            scene.setAttribute('mindar-image', `imageTargetSrc: ${mindFileUrl}; filterMinCF:0.01; filterBeta: 10;`);
             video.src = videoUrl;
 
             // 4. Lógica do Botão Iniciar
