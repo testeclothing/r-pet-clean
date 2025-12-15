@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pet AR Studio</title>
-    <!-- Fontes e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         :root {
-            --primary: #6366f1; /* Indigo */
+            --primary: #6366f1;
             --primary-hover: #4f46e5;
             --bg: #f3f4f6;
             --card-bg: #ffffff;
@@ -47,7 +46,6 @@
         h1 { margin-bottom: 5px; color: var(--text-main); }
         .subtitle { color: var(--text-light); font-size: 0.9em; margin-bottom: 30px; }
 
-        /* Steps Styling */
         .step-card {
             background: #f9fafb;
             border: 1px solid #e5e7eb;
@@ -55,7 +53,6 @@
             padding: 20px;
             margin-bottom: 20px;
             text-align: left;
-            transition: transform 0.2s;
         }
         
         .step-title {
@@ -66,7 +63,6 @@
             display: block;
         }
 
-        /* Botões e Links */
         .btn-action {
             display: inline-flex;
             align-items: center;
@@ -86,11 +82,9 @@
         }
         .btn-action:hover { background: var(--primary-hover); }
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-        .btn-outline:hover { background: #eef2ff; }
 
-        /* Custom File Inputs */
         .file-group { margin-bottom: 15px; }
-        .file-label { font-size: 0.85em; color: var(--text-light); display: block; margin-bottom: 5px; }
+        .file-label { font-size: 0.85em; color: var(--text-light); display: block; margin-bottom: 8px; }
         
         .custom-file-upload {
             border: 2px dashed #d1d5db;
@@ -107,10 +101,24 @@
             font-size: 0.9em;
         }
         .custom-file-upload:hover { border-color: var(--primary); color: var(--primary); }
-        .custom-file-upload i { font-size: 1.2em; }
         input[type="file"] { display: none; }
 
-        /* Loading Overlay */
+        /* ESTILO DO SELETOR DE MOLDURAS */
+        .frame-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .frame-option input { display: none; }
+        .option-box {
+            padding: 15px; border: 1px solid #ddd; border-radius: 8px;
+            text-align: center; cursor: pointer; font-size: 0.9em; font-weight: 500;
+            transition: all 0.2s;
+            background: white;
+        }
+        .frame-option input:checked + .option-box {
+            background-color: #eef2ff;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        /* Loading & Result */
         #loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.9);
@@ -125,8 +133,6 @@
             border-top: 4px solid var(--primary); border-radius: 50%;
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
-
-        /* Result Area */
         #result { display: none; animation: fadeIn 0.5s; text-align: center; }
         #qr-container {
             background: white; padding: 15px; border-radius: 12px;
@@ -134,35 +140,32 @@
         }
         #qr { width: 180px; height: 180px; display: block; }
         
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Loading Overlay -->
         <div id="loading">
             <div class="spinner"></div>
-            <p>A criar magia...</p>
+            <p>A construir a experiência...</p>
         </div>
 
         <div id="main-content">
             <h1>🐶 Pet AR Studio</h1>
             <p class="subtitle">Dê vida às fotos do seu animal</p>
 
-            <!-- Passo 1 -->
             <div class="step-card">
                 <span class="step-title">1. Preparar Imagem</span>
                 <p style="font-size: 0.85em; color: #666; margin-bottom: 15px;">
-                    Converta a foto do seu animal para o formato .mind
+                    Converta a foto do animal para .mind
                 </p>
                 <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" class="btn-action btn-outline">
                     <i class="fas fa-external-link-alt"></i> Abrir Compilador
                 </a>
             </div>
 
-            <!-- Passo 2 -->
             <div class="step-card">
                 <span class="step-title">2. Criar Experiência</span>
                 <form id="uploadForm">
@@ -183,6 +186,32 @@
                         <input type="file" id="videoFile" name="videoFile" accept="video/mp4" required onchange="updateLabel(this, 'videoLabel')">
                     </div>
 
+                    <!-- NOVO SELETOR DE MOLDURA -->
+                    <div class="file-group">
+                        <span class="file-label">Estilo da Moldura 3D</span>
+                        <div class="frame-selector">
+                            <label class="frame-option">
+                                <input type="radio" name="frameStyle" value="none" checked>
+                                <div class="option-box">🚫 Nenhuma</div>
+                            </label>
+
+                            <label class="frame-option">
+                                <input type="radio" name="frameStyle" value="modern">
+                                <div class="option-box" style="border-bottom: 3px solid #6366f1;">⚪ Tech</div>
+                            </label>
+
+                            <label class="frame-option">
+                                <input type="radio" name="frameStyle" value="wood">
+                                <div class="option-box" style="border-bottom: 3px solid #8B4513;">🟤 Madeira</div>
+                            </label>
+
+                            <label class="frame-option">
+                                <input type="radio" name="frameStyle" value="gold">
+                                <div class="option-box" style="border-bottom: 3px solid #FFD700;">🟡 Ouro</div>
+                            </label>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-action">
                         <i class="fas fa-magic"></i> Gerar QR Code
                     </button>
@@ -190,27 +219,17 @@
             </div>
         </div>
 
-        <!-- Resultado -->
         <div id="result">
             <h3>🎉 Tudo Pronto!</h3>
             <p style="color:#666; font-size:0.9em">Aponte a câmara para ver a magia</p>
-            
-            <div id="qr-container">
-                <img id="qr" src="">
-            </div>
-            
+            <div id="qr-container"><img id="qr" src=""></div>
             <br>
-            <a id="link" href="#" target="_blank" class="btn-action">
-                <i class="fas fa-play"></i> Testar no Navegador
-            </a>
-            <button onclick="location.reload()" class="btn-action btn-outline" style="margin-top: 10px;">
-                Criar Novo
-            </button>
+            <a id="link" href="#" target="_blank" class="btn-action"><i class="fas fa-play"></i> Testar</a>
+            <button onclick="location.reload()" class="btn-action btn-outline" style="margin-top: 10px;">Criar Novo</button>
         </div>
     </div>
 
     <script>
-        // UX: Atualizar texto do botão de upload ao selecionar ficheiro
         function updateLabel(input, labelId) {
             const label = document.getElementById(labelId);
             if(input.files && input.files[0]) {
@@ -222,29 +241,19 @@
 
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
-            
-            // UI Transition
             document.getElementById('loading').style.display = 'flex';
-            
             const formData = new FormData(e.target);
             try {
                 const req = await fetch('/create-experience', { method: 'POST', body: formData });
                 const res = await req.json();
-                
                 document.getElementById('loading').style.display = 'none';
-
                 if(res.success) {
                     document.getElementById('main-content').style.display = 'none';
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('qr').src = res.qrCode;
                     document.getElementById('link').href = res.viewerUrl;
-                } else {
-                    alert('Erro ao criar experiência. Tente novamente.');
-                }
-            } catch (err) {
-                document.getElementById('loading').style.display = 'none';
-                alert('Erro de conexão.');
-            }
+                } else { alert('Erro: ' + (res.error || 'Desconhecido')); }
+            } catch (err) { alert('Erro de conexão.'); document.getElementById('loading').style.display = 'none'; }
         };
     </script>
 </body>
