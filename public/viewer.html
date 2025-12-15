@@ -8,54 +8,63 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        /* 1. CORREÇÃO DA BARRA PRETA (NUCLEAR) */
+        /* 1. RESET E ECRÃ CHEIO */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: black;
+            overflow: hidden; 
+            background-color: black; /* Fundo preto para as bordas */
         }
 
-        /* Força o vídeo da câmara a ocupar 100vw (largura da vista) e 100vh (altura da vista) */
+        /* 2. CÂMARA (O VÍDEO DO MUNDO REAL) - CAMADA 1 */
+        /* Forçamos a ser visível e ocupar tudo */
         video {
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: cover !important; /* Estica sem deformar */
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            z-index: -2 !important; /* Garante que fica no fundo */
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            min-width: 100vw !important;
+            min-height: 100vh !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: cover !important;
+            z-index: 1 !important; /* Camada base */
+            display: block !important;
+        }
+
+        /* 3. CENA 3D (O VÍDEO DA MEMÓRIA) - CAMADA 2 */
+        #ar-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; /* Fica por cima da câmara */
         }
         
-        /* Canvas do A-Frame */
-        canvas.a-canvas {
-            width: 100vw !important;
-            height: 100vh !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 0 !important;
-        }
-
-        /* 2. UI LIMPA */
+        /* 4. INTERFACE (BOTÕES) - CAMADA 3 */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; pointer-events: none;
+            z-index: 3; /* Fica por cima de tudo */
+            pointer-events: none;
             display: flex; flex-direction: column; justify-content: flex-end;
             align-items: center;
         }
 
-        /* Mira (Scanner) */
+        /* Mira Simples */
         .scanner-frame {
             position: absolute; top: 50%; left: 50%;
-            width: 60vw; height: 60vw; /* Ligeiramente mais pequeno para focar melhor */
-            max-width: 300px; max-height: 300px;
+            width: 70vw; height: 70vw;
+            max-width: 350px; max-height: 350px;
             transform: translate(-50%, -50%);
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 20px;
             box-shadow: none;
         }
+        
+        .scanner-frame::before, .scanner-frame::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border-color: #6366f1; border-style: solid;
+        }
+        .scanner-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 20px 0 0 0; }
+        .scanner-frame::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 20px 0; }
 
+        /* Botão */
         #start-btn {
             pointer-events: auto; margin-bottom: 50px; padding: 12px 30px;
             background: #2563eb; color: white; border: none; border-radius: 50px;
@@ -91,14 +100,12 @@
             const mindFileUrl = `/uploads/${id}/targets.mind`;
             const videoUrl = `/uploads/${id}/video.mp4`;
 
-            // 3. CONFIGURAÇÃO DE TRACKING "BULLSEYE" (TIRO AO ALVO)
-            // missTolerance: 0 (Se perder a imagem, para logo o vídeo, evita que fique a flutuar no sítio errado)
-            // filterMinCF: 0.0001 (Extremamente preciso para evitar tremores e desvios laterais)
+            // CONFIGURAÇÕES DE TRACKING RÁPIDO
             const sceneHTML = `
             <a-scene 
-                mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.0001; filterBeta: 0.001; missTolerance: 0; uiLoading: no; uiScanning: no;" 
+                mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.001; filterBeta: 1000; uiLoading: no; uiScanning: no;" 
                 color-space="sRGB" 
-                renderer="colorManagement: true, physicallyCorrectLights" 
+                renderer="colorManagement: true, physicallyCorrectLights, alpha: true" 
                 vr-mode-ui="enabled: false" 
                 device-orientation-permission-ui="enabled: false">
                 
@@ -108,11 +115,8 @@
 
                 <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-                <!-- 4. CORREÇÃO DE POSIÇÃO -->
                 <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
-                    <!-- O truque aqui: align="center" e position="0 0 0" -->
-                    <!-- Se continuar torto, ajusta a position no primeiro número: position="-0.1 0 0" (Esquerda) -->
-                    <a-video src="#vid" position="0 0 0" height="1.5" width="1" align="center"></a-video>
+                    <a-video src="#vid" position="0 0 0" height="1.5" width="1" rotation="0 0 0"></a-video>
                 </a-entity>
             </a-scene>
             `;
@@ -141,7 +145,7 @@
 
             target.addEventListener("targetLost", () => {
                 if(video) video.pause();
-                scannerFrame.style.borderColor = "rgba(255,255,255,0.6)";
+                scannerFrame.style.borderColor = "rgba(255,255,255,0.4)";
                 scannerFrame.style.opacity = '1';
                 statusText.innerText = "Aponte para a foto";
             });
