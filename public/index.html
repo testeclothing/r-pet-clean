@@ -7,6 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Biblioteca para o QR Code Bonito -->
+    <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    
     <style>
         :root { --primary: #6366f1; --bg: #f3f4f6; --text-main: #1f2937; }
         body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
@@ -17,7 +20,7 @@
         .btn-action { display: flex; align-items: center; justify-content: center; width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 1em; margin-top: 10px;}
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
         
-        /* CORREÇÃO DO CSS PARA O CURSOR */
+        /* Botões de Upload Corrigidos */
         .custom-file-upload { 
             border: 2px dashed #d1d5db; border-radius: 8px; padding: 15px; 
             text-align: center; cursor: pointer; display: flex; 
@@ -30,6 +33,15 @@
         #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 10; }
         .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         #result { display: none; text-align: center; }
+        
+        /* Container do QR Code */
+        #qr-canvas {
+            margin: 20px auto;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -50,13 +62,11 @@
             <div class="step-card">
                 <span class="step-title">2. Criar Experiência</span>
                 <form id="uploadForm">
-                    <!-- CORREÇÃO AQUI: Adicionado atributo for="..." -->
                     <label for="mindFile" class="custom-file-upload" id="mindLabel">
                         <i class="fas fa-cube"></i> Escolher targets.mind
                     </label>
                     <input type="file" id="mindFile" name="mindFile" accept=".mind" required onchange="updateLabel(this, 'mindLabel')">
                     
-                    <!-- CORREÇÃO AQUI: Adicionado atributo for="..." -->
                     <label for="videoFile" class="custom-file-upload" id="videoLabel">
                         <i class="fas fa-video"></i> Escolher video.mp4
                     </label>
@@ -69,7 +79,10 @@
 
         <div id="result">
             <h3>🎉 Tudo Pronto!</h3>
-            <div style="background:white; padding:10px; display:inline-block; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); margin:20px 0;"><img id="qr" src="" width="180"></div>
+            
+            <!-- O QR CODE DOURADO APARECE AQUI -->
+            <div id="qr-canvas"></div>
+            
             <br>
             <a id="link" href="#" target="_blank" class="btn-action"><i class="fas fa-play"></i> Testar</a>
             <button onclick="location.reload()" class="btn-action btn-outline">Criar Novo</button>
@@ -85,6 +98,9 @@
                 label.style.backgroundColor = "#eef2ff";
             }
         }
+
+        let qrCode;
+
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
             document.getElementById('loading').style.display = 'flex';
@@ -93,11 +109,30 @@
                 const req = await fetch('/create-experience', { method: 'POST', body: formData });
                 const res = await req.json();
                 document.getElementById('loading').style.display = 'none';
+                
                 if(res.success) {
                     document.getElementById('main-content').style.display = 'none';
                     document.getElementById('result').style.display = 'block';
-                    document.getElementById('qr').src = res.qrCode;
                     document.getElementById('link').href = res.viewerUrl;
+
+                    // --- CONFIGURAÇÃO DO QR CODE DOURADO ---
+                    const pawLogo = "https://cdn-icons-png.flaticon.com/512/1076/1076928.png"; 
+
+                    qrCode = new QRCodeStyling({
+                        width: 300,
+                        height: 300,
+                        data: res.viewerUrl,
+                        image: pawLogo,
+                        dotsOptions: { color: "#d4af37", type: "square" }, // Ouro
+                        backgroundOptions: { color: "#000000" }, // Preto
+                        imageOptions: { crossOrigin: "anonymous", margin: 10, imageSize: 0.4 },
+                        cornersSquareOptions: { color: "#d4af37", type: "square" },
+                        cornersDotOptions: { color: "#d4af37" }
+                    });
+
+                    document.getElementById("qr-canvas").innerHTML = "";
+                    qrCode.append(document.getElementById("qr-canvas"));
+
                 } else { alert('Erro!'); }
             } catch (err) { alert('Erro de conexão.'); document.getElementById('loading').style.display = 'none'; }
         };
