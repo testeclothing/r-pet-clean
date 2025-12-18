@@ -36,7 +36,7 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         #result { display: none; text-align: center; }
         
-        /* QR Code Container - Forçar tamanho e cor */
+        /* QR Code Container */
         #qr-canvas {
             margin: 20px auto;
             border-radius: 10px;
@@ -44,10 +44,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: black; /* Fundo preto para combinar */
             padding: 10px;
-            width: 300px;
-            height: 300px;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -93,7 +90,7 @@
             
             <div style="display: flex; gap: 10px; flex-direction: column;">
                 <button id="download-btn" class="btn-action btn-gold">
-                    <i class="fas fa-download"></i> Baixar QR Code
+                    <i class="fas fa-download"></i> Baixar QR Code (para o Canva)
                 </button>
 
                 <a id="link" href="#" target="_blank" class="btn-action">
@@ -118,8 +115,6 @@
         }
 
         let qrCode;
-        // Pata Simples (Branca com contorno transparente) para funcionar bem no fundo preto
-        const pawIconBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSIjRkZGIj48cGF0aCBkPSJNMjU2IDMyQzExNC42IDMyIDAgMTQ2LjYgMCAyNTZzMTE0LjYgMjI0IDI1NiAyMjQgMjU2LTExNC42IDI1Ni0yMjRTMzk3LjQgMzIgMjU2IDMyem0wIDQ0OGMtMTIzLjcgMC0yMjQtMTAwLjMtMjI0LTIyNFMxMzIuMyA1NiAyNTYgNTZzMjI0IDEwMC4zIDIyNCAyMjQtMTAwLjMgMjI0LTIyNCAyMjR6bS0zMi0yMjRjMC0xNy43LTE0LjMtMzItMzItMzJzLTMyIDE0LjMtMzIgMzIgMTQuMyAzMiAzMiAzMnMzMi0xNC4zIDMyLTMyem0xMjggMGMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bS02NC02NGMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bS05NiA5NmMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bTI1NiAwwcTAtMTcuNy0xNC4zLTMyLTMyLTMycy0zMiAxNC4zLTMyIDMyIDE0LjMgMzIgMzIgMzIgMzItMTQuMyAzMi0zMnoiLz48L3N2Zz4=";
 
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -135,13 +130,18 @@
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('link').href = res.viewerUrl;
 
-                    // --- CONFIGURAÇÃO ROBUSTA DO QR CODE ---
+                    // --- QR CODE ROBUSTO PARA CANVA ---
                     qrCode = new QRCodeStyling({
-                        width: 280,
-                        height: 280,
-                        type: "canvas", // CRUCIAL PARA DOWNLOAD FUNCIONAR
+                        width: 300,
+                        height: 300,
+                        type: "canvas",
                         data: res.viewerUrl,
-                        image: pawIconBase64,
+                        // REMOVIDO: image (Agora fazes no Canva)
+                        qrOptions: {
+                            // IMPORTANTE: Nível 'H' (High) permite tapar 30% do código (o meio)
+                            // sem estragar a leitura. Ideal para o Canva.
+                            errorCorrectionLevel: 'H' 
+                        },
                         dotsOptions: {
                             color: "#d4af37", // Ouro
                             type: "square"
@@ -149,43 +149,17 @@
                         backgroundOptions: {
                             color: "#000000", // Preto
                         },
-                        imageOptions: {
-                            crossOrigin: "anonymous",
-                            margin: 5,
-                            imageSize: 0.4
-                        },
-                        cornersSquareOptions: {
-                            color: "#d4af37",
-                            type: "square"
-                        },
-                        cornersDotOptions: {
-                            color: "#d4af37"
-                        }
+                        cornersSquareOptions: { color: "#d4af37", type: "square" },
+                        cornersDotOptions: { color: "#d4af37" }
                     });
 
-                    // Limpa e desenha
                     const container = document.getElementById("qr-canvas");
                     container.innerHTML = "";
                     qrCode.append(container);
 
-                    // --- FUNÇÃO DE DOWNLOAD MANUAL (CORREÇÃO) ---
+                    // --- DOWNLOAD QUE FUNCIONA ---
                     document.getElementById('download-btn').onclick = () => {
-                        // Método 1: Tenta usar a biblioteca
-                        try {
-                            qrCode.download({ name: "pet-ar-memory", extension: "png" });
-                        } catch (err) {
-                            console.log("Erro no download da lib, tentando manual...");
-                            // Método 2: Força bruta (Agarra o Canvas HTML)
-                            const canvas = container.querySelector('canvas');
-                            if(canvas) {
-                                const link = document.createElement('a');
-                                link.download = 'pet-ar-memory.png';
-                                link.href = canvas.toDataURL("image/png");
-                                link.click();
-                            } else {
-                                alert("O QR Code ainda está a carregar. Tente em 2 segundos.");
-                            }
-                        }
+                        qrCode.download({ name: "pet-ar-memory", extension: "png" });
                     };
 
                 } else { alert('Erro: ' + (res.error || 'Desconhecido')); }
