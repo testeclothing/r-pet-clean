@@ -40,10 +40,11 @@
             margin: 20px auto;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            /* Garante que o canvas fica centrado */
+            /* Removemos a sombra aqui para evitar conflitos visuais se o canvas falhar */
             display: flex;
             justify-content: center;
+            align-items: center;
+            min-height: 300px;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -88,7 +89,6 @@
             <div id="qr-canvas"></div>
             
             <div style="display: flex; gap: 10px; flex-direction: column;">
-                <!-- BOTÃO DE DOWNLOAD -->
                 <button id="download-btn" class="btn-action btn-gold">
                     <i class="fas fa-download"></i> Baixar QR Code
                 </button>
@@ -115,9 +115,8 @@
         }
 
         let qrCode;
-
-        // Ícone da Pata em Base64 (Isto garante que funciona sempre, sem links externos)
-        const pawIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAb1BMVEUAAAD1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhS+Z+GfAAAAI3RSTlMA+wzrF/KoKAn23sK2iH1wZ1omFAvU08e/t6uVi39zako2Lx4y6uQAAAK3SURBVHic7ZrbctsgEIZHIw5O4qS207S9/1s2KwQYA4Jgd7vTPv9MI4x+WAYWgCWz2Wx/0W63+91+96fer/db99v9dn+1u70A8Psf3T9vP6/fP+/3F4B/91/d768E8P326/7r7xLAb//Z/fE9A/j79/vXtwTQ/fMhA4j+EAG0/zoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzYBeP/8+f01A/j8+fU7A4j+EAG0/4I/wY/vGeD37/evbwmg++dDBhD9IQJo/3UC6P/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/2w/wX//2f3xPQP4+/f717cE0P3zIQOI/hABtP+CP8GP7xng9+/3r28JoPvnQwYQ/SECXP3r/db9dr/dX+1uLwD8/kf3z9vP6/fP+/0F4N/9V/f7KwF8v/26//q7BPDbfwF8K6Qhe/l9/gAAAABJRU5ErkJggg==";
+        // Ícone da Pata Simplificado em Base64 (Preto com fundo transparente)
+        const pawIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAh1BMVEUAAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///+x4O5QAAAALnRSTlMA+wdF6/CgCfbewraIfXBnWiYUC9TTx7+3q5WLf3NqSjYvHjLq5N7WzZlyW0w9OxiW2wAAArtJREFUeJztmutu2zAMhUcjDk7ipLbTtL3/WzYrBBgDgmB3u9M+/0wjjH5YBBaAJbPZbH/Rbrf73X73p96v91v32/12f7W7vQDw+x/dP28/r98/7/cXgH/3X93vrwTw/fbr/uvvEsBv/9n98T0D+Pv3+9e3BND98yEDiP4QAbT/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+dAPp/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+dAPp/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+bALx//vz+mgF8/vz6nQFEf4gA2n/Bn+DH9wzw+/f717cE0P3zIQOI/hABtP86AfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/9l+gv/+s/vjewbw9+/3r28JoPvnQwYQ/SECbP0V/Al+fM8Av3+/f31LAN0/HzKA6A8RQPuvE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/zyYA758/v79mAJ8/v35nANEfIoD2X/An+PE9A/z+/f71LQF0/3zIAKI/RID1v95v3W/32/3V7vYCwO9/dP+8/bx+//zfXwD+3X91v78SwPfbr/uvv0sAv/0X8q2kIXQ5XD4AAAAASUVORK5CYII=";
 
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -133,43 +132,42 @@
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('link').href = res.viewerUrl;
 
-                    // --- CRIAÇÃO DO QR CODE DOURADO ---
+                    // --- CRIAÇÃO DO QR CODE ---
                     qrCode = new QRCodeStyling({
                         width: 300,
                         height: 300,
+                        type: "canvas", // FORÇA O USO DE CANVAS (MAIS COMPATÍVEL)
                         data: res.viewerUrl,
-                        image: pawIconBase64, // Usa a imagem embutida
+                        image: pawIconBase64,
                         dotsOptions: {
-                            color: "#d4af37", // Ouro
-                            type: "square" // Pontos quadrados (Clean)
+                            color: "#d4af37", // Dourado
+                            type: "square"
                         },
                         backgroundOptions: {
-                            color: "#000000", // Fundo Preto
+                            color: "#000000", // Preto
                         },
                         imageOptions: {
                             crossOrigin: "anonymous",
                             margin: 10,
-                            imageSize: 0.4
+                            imageSize: 0.4,
+                            saveAsBlob: true // Ajuda no download
                         },
-                        cornersSquareOptions: {
-                            color: "#d4af37",
-                            type: "square"
-                        },
-                        cornersDotOptions: {
-                            color: "#d4af37"
-                        }
+                        cornersSquareOptions: { color: "#d4af37", type: "square" },
+                        cornersDotOptions: { color: "#d4af37" }
                     });
 
-                    // Renderizar QR Code
-                    document.getElementById("qr-canvas").innerHTML = "";
-                    qrCode.append(document.getElementById("qr-canvas"));
+                    const qrContainer = document.getElementById("qr-canvas");
+                    qrContainer.innerHTML = ""; // Limpa anterior
+                    
+                    // Adiciona o QR Code e espera que renderize
+                    qrCode.append(qrContainer);
 
-                    // --- CONFIGURAR BOTÃO DE DOWNLOAD ---
+                    // --- BOTÃO DOWNLOAD ---
                     document.getElementById('download-btn').onclick = () => {
                         qrCode.download({ name: "pet-ar-memory", extension: "png" });
                     };
 
-                } else { alert('Erro!'); }
+                } else { alert('Erro: ' + (res.error || 'Desconhecido')); }
             } catch (err) { alert('Erro de conexão.'); document.getElementById('loading').style.display = 'none'; }
         };
     </script>
