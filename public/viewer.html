@@ -8,54 +8,45 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        /* 1. O CORPO DA PÁGINA (TRANSPARENTE) */
+        /* 1. RESET CRÍTICO: Fundo transparente para ver a câmara */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden;
-            background: transparent !important; /* Importante: Transparente para ver a câmara */
+            background: transparent !important;
         }
 
-        /* 2. O VÍDEO DA CÂMARA (MINDAR) - NO FUNDO DE TUDO */
+        /* 2. CÂMARA (FUNDO) */
         video {
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
             object-fit: cover !important;
             z-index: -2 !important; /* Atrás de tudo */
             display: block !important;
         }
 
-        /* 3. A CENA AR (ONDE APARECE O VÍDEO MÁGICO) */
+        /* 3. CENA AR (MEIO) */
         #ar-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none; /* Deixa clicar na UI */
+            z-index: 1; pointer-events: none;
         }
         
-        /* Forçar transparência no canvas do A-Frame */
-        canvas.a-canvas {
-            background-color: transparent !important;
-            opacity: 1 !important;
-        }
+        canvas.a-canvas { background-color: transparent !important; opacity: 1 !important; }
 
-        /* 4. A INTERFACE (MIRA E BOTÕES) - NA FRENTE DE TUDO */
+        /* 4. UI (FRENTE) */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100;
-            pointer-events: none;
+            z-index: 100; pointer-events: none;
             display: flex; flex-direction: column; justify-content: flex-end;
             align-items: center;
         }
 
-        /* MIRA LIMPA */
         .scanner-frame {
             position: absolute; top: 50%; left: 50%;
             width: 70vw; height: 70vw;
             max-width: 350px; max-height: 350px;
             transform: translate(-50%, -50%);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 20px;
         }
         
@@ -66,7 +57,6 @@
         .scanner-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 20px 0 0 0; }
         .scanner-frame::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 20px 0; }
 
-        /* BOTÃO */
         #start-btn {
             pointer-events: auto; margin-bottom: 50px; padding: 12px 30px;
             background: #2563eb; color: white; border: none; border-radius: 50px;
@@ -84,14 +74,12 @@
 </head>
 <body>
     
-    <!-- UI -->
     <div id="ui-layer">
         <div class="header"><h3 id="status-text">Aponte para a foto</h3></div>
         <div class="scanner-frame" id="scanner"></div>
         <button id="start-btn">🔊 Tocar para Iniciar</button>
     </div>
     
-    <!-- CENA AR -->
     <div id="ar-container"></div>
 
     <script>
@@ -104,8 +92,7 @@
             const mindFileUrl = `/uploads/${id}/targets.mind`;
             const videoUrl = `/uploads/${id}/video.mp4`;
 
-            // CONFIGURAÇÕES
-            // alpha: true no renderer é CRUCIAL para o fundo ser transparente
+            // Configuração para Transparência e Rapidez
             const sceneHTML = `
             <a-scene 
                 mindar-image="imageTargetSrc: ${mindFileUrl}; filterMinCF:0.001; filterBeta: 1000; uiLoading: no; uiScanning: no;" 
@@ -143,7 +130,7 @@
 
             target.addEventListener("targetFound", () => {
                 if(video) video.play();
-                scannerFrame.style.borderColor = "#4ade80"; 
+                scannerFrame.style.borderColor = "#4ade80";
                 statusText.innerText = "";
                 setTimeout(() => { scannerFrame.style.opacity = '0'; }, 300);
             });
