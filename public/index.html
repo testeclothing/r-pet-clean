@@ -15,6 +15,7 @@
         body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
         .container { background: white; width: 100%; max-width: 500px; border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         h1 { margin-bottom: 5px; color: var(--text-main); }
+        
         .step-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: left; }
         .step-title { font-weight: 600; color: var(--primary); display: block; margin-bottom: 10px; }
         
@@ -35,16 +36,18 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         #result { display: none; text-align: center; }
         
-        /* QR Code Container */
+        /* QR Code Container - Forçar tamanho e cor */
         #qr-canvas {
             margin: 20px auto;
             border-radius: 10px;
             overflow: hidden;
-            /* Removemos a sombra aqui para evitar conflitos visuais se o canvas falhar */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 300px;
+            background: black; /* Fundo preto para combinar */
+            padding: 10px;
+            width: 300px;
+            height: 300px;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -115,8 +118,8 @@
         }
 
         let qrCode;
-        // Ícone da Pata Simplificado em Base64 (Preto com fundo transparente)
-        const pawIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAh1BMVEUAAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///8AAAD///+x4O5QAAAALnRSTlMA+wdF6/CgCfbewraIfXBnWiYUC9TTx7+3q5WLf3NqSjYvHjLq5N7WzZlyW0w9OxiW2wAAArtJREFUeJztmutu2zAMhUcjDk7ipLbTtL3/WzYrBBgDgmB3u9M+/0wjjH5YBBaAJbPZbH/Rbrf73X73p96v91v32/12f7W7vQDw+x/dP28/r98/7/cXgH/3X93vrwTw/fbr/uvvEsBv/9n98T0D+Pv3+9e3BND98yEDiP4QAbT/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+dAPp/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+dAPp/OgH0/3QC6P/pBND/0wmg/6cTQP9PJ4D+n04A/T+bALx//vz+mgF8/vz6nQFEf4gA2n/Bn+DH9wzw+/f717cE0P3zIQOI/hABtP86AfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/+kE0//TCab/pxNM/08nmP6fTjD9P51g+n86wfT/dILp/9l+gv/+s/vjewbw9+/3r28JoPvnQwYQ/SECbP0V/Al+fM8Av3+/f31LAN0/HzKA6A8RQPuvE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/zyYA758/v79mAJ8/v35nANEfIoD2X/An+PE9A/z+/f71LQF0/3zIAKI/RID1v95v3W/32/3V7vYCwO9/dP+8/bx+//zfXwD+3X91v78SwPfbr/uvv0sAv/0X8q2kIXQ5XD4AAAAASUVORK5CYII=";
+        // Pata Simples (Branca com contorno transparente) para funcionar bem no fundo preto
+        const pawIconBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSIjRkZGIj48cGF0aCBkPSJNMjU2IDMyQzExNC42IDMyIDAgMTQ2LjYgMCAyNTZzMTE0LjYgMjI0IDI1NiAyMjQgMjU2LTExNC42IDI1Ni0yMjRTMzk3LjQgMzIgMjU2IDMyem0wIDQ0OGMtMTIzLjcgMC0yMjQtMTAwLjMtMjI0LTIyNFMxMzIuMyA1NiAyNTYgNTZzMjI0IDEwMC4zIDIyNCAyMjQtMTAwLjMgMjI0LTIyNCAyMjR6bS0zMi0yMjRjMC0xNy43LTE0LjMtMzItMzItMzJzLTMyIDE0LjMtMzIgMzIgMTQuMyAzMiAzMiAzMnMzMi0xNC4zIDMyLTMyem0xMjggMGMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bS02NC02NGMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bS05NiA5NmMwLTE3LjctMTQuMy0zMi0zMi0zMnMtMzIgMTQuMy0zMiAzMiAxNC4zIDMyIDMyIDMyIDMyLTE0LjMgMzItMzJ6bTI1NiAwwcTAtMTcuNy0xNC4zLTMyLTMyLTMycy0zMiAxNC4zLTMyIDMyIDE0LjMgMzIgMzIgMzIgMzItMTQuMyAzMi0zMnoiLz48L3N2Zz4=";
 
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -132,15 +135,15 @@
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('link').href = res.viewerUrl;
 
-                    // --- CRIAÇÃO DO QR CODE ---
+                    // --- CONFIGURAÇÃO ROBUSTA DO QR CODE ---
                     qrCode = new QRCodeStyling({
-                        width: 300,
-                        height: 300,
-                        type: "canvas", // FORÇA O USO DE CANVAS (MAIS COMPATÍVEL)
+                        width: 280,
+                        height: 280,
+                        type: "canvas", // CRUCIAL PARA DOWNLOAD FUNCIONAR
                         data: res.viewerUrl,
                         image: pawIconBase64,
                         dotsOptions: {
-                            color: "#d4af37", // Dourado
+                            color: "#d4af37", // Ouro
                             type: "square"
                         },
                         backgroundOptions: {
@@ -148,27 +151,49 @@
                         },
                         imageOptions: {
                             crossOrigin: "anonymous",
-                            margin: 10,
-                            imageSize: 0.4,
-                            saveAsBlob: true // Ajuda no download
+                            margin: 5,
+                            imageSize: 0.4
                         },
-                        cornersSquareOptions: { color: "#d4af37", type: "square" },
-                        cornersDotOptions: { color: "#d4af37" }
+                        cornersSquareOptions: {
+                            color: "#d4af37",
+                            type: "square"
+                        },
+                        cornersDotOptions: {
+                            color: "#d4af37"
+                        }
                     });
 
-                    const qrContainer = document.getElementById("qr-canvas");
-                    qrContainer.innerHTML = ""; // Limpa anterior
-                    
-                    // Adiciona o QR Code e espera que renderize
-                    qrCode.append(qrContainer);
+                    // Limpa e desenha
+                    const container = document.getElementById("qr-canvas");
+                    container.innerHTML = "";
+                    qrCode.append(container);
 
-                    // --- BOTÃO DOWNLOAD ---
+                    // --- FUNÇÃO DE DOWNLOAD MANUAL (CORREÇÃO) ---
                     document.getElementById('download-btn').onclick = () => {
-                        qrCode.download({ name: "pet-ar-memory", extension: "png" });
+                        // Método 1: Tenta usar a biblioteca
+                        try {
+                            qrCode.download({ name: "pet-ar-memory", extension: "png" });
+                        } catch (err) {
+                            console.log("Erro no download da lib, tentando manual...");
+                            // Método 2: Força bruta (Agarra o Canvas HTML)
+                            const canvas = container.querySelector('canvas');
+                            if(canvas) {
+                                const link = document.createElement('a');
+                                link.download = 'pet-ar-memory.png';
+                                link.href = canvas.toDataURL("image/png");
+                                link.click();
+                            } else {
+                                alert("O QR Code ainda está a carregar. Tente em 2 segundos.");
+                            }
+                        }
                     };
 
                 } else { alert('Erro: ' + (res.error || 'Desconhecido')); }
-            } catch (err) { alert('Erro de conexão.'); document.getElementById('loading').style.display = 'none'; }
+            } catch (err) { 
+                console.error(err);
+                alert('Erro de conexão.'); 
+                document.getElementById('loading').style.display = 'none'; 
+            }
         };
     </script>
 </body>
