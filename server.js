@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import QRCode from 'qrcode';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +18,6 @@ app.use(express.json());
 // Configuração do Multer (Upload)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // req.customId é definido na rota antes do upload
         const uploadPath = path.join(__dirname, 'uploads', req.customId);
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
@@ -61,18 +59,12 @@ app.post('/create-experience', (req, res) => {
                 throw new Error('Faltam ficheiros (mind ou video)');
             }
 
-            // Ler o estilo da moldura (padrão 'none')
-            const frameStyle = req.body.frameStyle || 'none';
-
             const deployUrl = `${req.protocol}://${req.get('host')}`;
-            // Adicionar o parâmetro ?frame=estilo ao link
-            const viewerUrl = `${deployUrl}/viewer.html?id=${sessionId}&frame=${frameStyle}`;
+            // Apenas devolvemos o URL. O frontend gera o QR Code.
+            const viewerUrl = `${deployUrl}/viewer.html?id=${sessionId}`;
             
-            const qrCodeData = await QRCode.toDataURL(viewerUrl);
-
             res.json({
                 success: true,
-                qrCode: qrCodeData,
                 viewerUrl: viewerUrl
             });
 
