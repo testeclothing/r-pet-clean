@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Biblioteca para o QR Code Bonito -->
+    <!-- Biblioteca QR Code -->
     <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     
     <style>
@@ -17,10 +17,11 @@
         h1 { margin-bottom: 5px; color: var(--text-main); }
         .step-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: left; }
         .step-title { font-weight: 600; color: var(--primary); display: block; margin-bottom: 10px; }
+        
         .btn-action { display: flex; align-items: center; justify-content: center; width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 1em; margin-top: 10px;}
         .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-gold { background: linear-gradient(45deg, #d4af37, #b49226); color: white; border: none; }
         
-        /* Botões de Upload Corrigidos */
         .custom-file-upload { 
             border: 2px dashed #d1d5db; border-radius: 8px; padding: 15px; 
             text-align: center; cursor: pointer; display: flex; 
@@ -34,12 +35,15 @@
         .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         #result { display: none; text-align: center; }
         
-        /* Container do QR Code */
+        /* QR Code Container */
         #qr-canvas {
             margin: 20px auto;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            /* Garante que o canvas fica centrado */
+            display: flex;
+            justify-content: center;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -80,12 +84,23 @@
         <div id="result">
             <h3>🎉 Tudo Pronto!</h3>
             
-            <!-- O QR CODE DOURADO APARECE AQUI -->
+            <!-- QR CODE -->
             <div id="qr-canvas"></div>
             
-            <br>
-            <a id="link" href="#" target="_blank" class="btn-action"><i class="fas fa-play"></i> Testar</a>
-            <button onclick="location.reload()" class="btn-action btn-outline">Criar Novo</button>
+            <div style="display: flex; gap: 10px; flex-direction: column;">
+                <!-- BOTÃO DE DOWNLOAD -->
+                <button id="download-btn" class="btn-action btn-gold">
+                    <i class="fas fa-download"></i> Baixar QR Code
+                </button>
+
+                <a id="link" href="#" target="_blank" class="btn-action">
+                    <i class="fas fa-play"></i> Testar no Browser
+                </a>
+                
+                <button onclick="location.reload()" class="btn-action btn-outline">
+                    Criar Novo
+                </button>
+            </div>
         </div>
     </div>
 
@@ -101,6 +116,9 @@
 
         let qrCode;
 
+        // Ícone da Pata em Base64 (Isto garante que funciona sempre, sem links externos)
+        const pawIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAb1BMVEUAAAD1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhT1qhS+Z+GfAAAAI3RSTlMA+wzrF/KoKAn23sK2iH1wZ1omFAvU08e/t6uVi39zako2Lx4y6uQAAAK3SURBVHic7ZrbctsgEIZHIw5O4qS207S9/1s2KwQYA4Jgd7vTPv9MI4x+WAYWgCWz2Wx/0W63+91+96fer/db99v9dn+1u70A8Psf3T9vP6/fP+/3F4B/91/d768E8P326/7r7xLAb//Z/fE9A/j79/vXtwTQ/fMhA4j+EAG0/zoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzoB9P90Auj/6QTQ/9MJoP+nE0D/TyeA/p9OAP0/nQD6fzYBeP/8+f01A/j8+fU7A4j+EAG0/4I/wY/vGeD37/evbwmg++dDBhD9IQJo/3UC6P/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/3SC6f/pBNP/0wmm/6cTTP9PJ5j+n04w/T+dYPp/OsH0/2w/wX//2f3xPQP4+/f717cE0P3zIQOI/hABtP+CP8GP7xng9+/3r28JoPvnQwYQ/SECXP3r/db9dr/dX+1uLwD8/kf3z9vP6/fP+/0F4N/9V/f7KwF8v/26//q7BPDbfwF8K6Qhe/l9/gAAAABJRU5ErkJggg==";
+
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
             document.getElementById('loading').style.display = 'flex';
@@ -115,23 +133,41 @@
                     document.getElementById('result').style.display = 'block';
                     document.getElementById('link').href = res.viewerUrl;
 
-                    // --- CONFIGURAÇÃO DO QR CODE DOURADO ---
-                    const pawLogo = "https://cdn-icons-png.flaticon.com/512/1076/1076928.png"; 
-
+                    // --- CRIAÇÃO DO QR CODE DOURADO ---
                     qrCode = new QRCodeStyling({
                         width: 300,
                         height: 300,
                         data: res.viewerUrl,
-                        image: pawLogo,
-                        dotsOptions: { color: "#d4af37", type: "square" }, // Ouro
-                        backgroundOptions: { color: "#000000" }, // Preto
-                        imageOptions: { crossOrigin: "anonymous", margin: 10, imageSize: 0.4 },
-                        cornersSquareOptions: { color: "#d4af37", type: "square" },
-                        cornersDotOptions: { color: "#d4af37" }
+                        image: pawIconBase64, // Usa a imagem embutida
+                        dotsOptions: {
+                            color: "#d4af37", // Ouro
+                            type: "square" // Pontos quadrados (Clean)
+                        },
+                        backgroundOptions: {
+                            color: "#000000", // Fundo Preto
+                        },
+                        imageOptions: {
+                            crossOrigin: "anonymous",
+                            margin: 10,
+                            imageSize: 0.4
+                        },
+                        cornersSquareOptions: {
+                            color: "#d4af37",
+                            type: "square"
+                        },
+                        cornersDotOptions: {
+                            color: "#d4af37"
+                        }
                     });
 
+                    // Renderizar QR Code
                     document.getElementById("qr-canvas").innerHTML = "";
                     qrCode.append(document.getElementById("qr-canvas"));
+
+                    // --- CONFIGURAR BOTÃO DE DOWNLOAD ---
+                    document.getElementById('download-btn').onclick = () => {
+                        qrCode.download({ name: "pet-ar-memory", extension: "png" });
+                    };
 
                 } else { alert('Erro!'); }
             } catch (err) { alert('Erro de conexão.'); document.getElementById('loading').style.display = 'none'; }
